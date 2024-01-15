@@ -1,0 +1,165 @@
+###Housekeeping
+#clear all vars
+rm(list=ls())
+
+##Libraries and packages
+#list of packages to install
+packages_to_install <- c("tidyverse", "nflfastR", "nflplotR")
+
+#check if packages already installed in library
+for (package in packages_to_install) {                    
+  if (!requireNamespace(package, quietly = TRUE)) {
+    install.packages(package)
+  }
+}
+
+#load packages from packages_to_install
+for (package in packages_to_install) {                    
+  library(package, character.only = TRUE)
+}
+
+##Documentation and information
+
+#Documentation for nflfastR can be found here: https://www.nflfastr.com/
+#or with the R function
+# ?nflfastR
+
+
+###Data visualization of wins and making the playoffs.
+##How many wins is the "breakpoint" to make the playoffs on average?
+#Using logistic regression model, we can look at made playoffs as a binary "yes"/"no", then compare to the number of wins that team got that year
+
+#Two important notes:
+#1/ The last expansion team was in 2002. This also led to conference realignment and changes to playoff format.
+#2/ From 1978-2020, every team played 16 games.
+#Thus, we choose our time range to be 2002-2020.
+years <- c(2002:2020)
+#the games df is a list of all the games played from 1999 to current day
+games <- nflreadr::load_schedules() %>%
+  #filter such that only the games from 2002 up to 2020 are left
+  dplyr::filter(season %in% years)
+
+#From the entire games df, we're only interested in wins/losses/ties, so we filter out the rest
+#Note: result in games df is the home_team score - away_team score.
+win_loss_tie_columns <- games %>%
+  dplyr::select(season, game_type, away_team, away_score, home_team, home_score, result, overtime) %>%
+  #use mutate() to determine who won or lost (or if the game tied, both teams) that specific game
+  dplyr::mutate(
+    #set the winner based on the result column, where result >0 when home team wins
+    Winner = ifelse(result < 0, away_team, ifelse(result > 0, home_team, NA)),
+    #similar setup for loser
+    Loser = ifelse(result < 0, home_team, ifelse(result > 0, away_team, NA)),
+    #For ties, since both teams are awarded ties, we need to have both teams appear here.
+    Tie = ifelse(result == 0, paste(home_team, away_team, sep = ","), NA)
+  )
+
+#Get the full list of teams to add to another df down the line. 
+#Note: we can use either $home_team or $away_team columns
+#Note: some teams relocated (looking at you chargers) so there are more than 32 unique teams
+list_of_teams <- unique(games$home_team)
+
+#For testing our function, we'll use a single year and a single team
+year <- c(2002)
+team <- c("ATL")
+
+#From the games filtered df win_loss_tie_columns, we're going to filter for only regular season games
+#and also for games only where our team of interest appeared. grepl() is used here because the $Ties
+#column has more than a single team (if not NA)
+win_loss_totals_ATL2002 <- win_loss_tie_columns %>%
+  dplyr::filter(game_type == "REG" & season == year & (Winner == team | Loser == team | grepl(team, Tie))) %>%
+  #Summarize() will let us build our new df with the team name, season, and sum the wins, losses, and ties
+  #Again, we need to use grepl() because of the Ties entries
+  dplyr::summarize(
+    team = team,
+    season = year,
+    wins = sum(grepl(team, Winner)),
+    losses = sum(grepl(team, Loser)),
+    ties = sum(grepl(team, Tie))
+  )
+
+#sanity check the df  
+tibble(win_loss_tie_columns)
+tibble(win_loss_totals_ATL2002)
+
+#We aim to create a function of inputs "team" and "year" that will take all the inputs from
+#the vectors years and list_of_teams and create new rows for each of those combinations
+calculate_totals <- function(team,year) {
+  totals <- win_loss_tie_columns %>%
+    #below is the exact same code that generated our single team win/loss/tie table
+    dplyr::filter(game_type == "REG" & season == year & (Winner == team | Loser == team | grepl(team, Tie))) %>%
+    dplyr::summarize(
+      team = team,
+      season = year,
+      wins = sum(grepl(team, Winner)),
+      losses = sum(grepl(team, Loser)),
+      ties = sum(grepl(team, Tie))
+    )
+  return(totals)
+}
+
+#Create an empty data frame to populate
+win_loss_totals_allteams_allyears <- data.frame()
+#populate the data frame with our function, running it for every team and every year
+for (team in list_of_teams) {
+  for (year in years) {
+    win_loss_totals_allteams_allyears <- bind_rows(win_loss_totals_allteams_allyears, calculate_totals(team,year))
+  }
+}
+
+
+#Since we made some combinations that didn't exist (the Chargers were SD before becoming the LAC when they moved)
+#we need to filter out instances of years/teams where they played zero total games
+win_loss_totals_allteams_allyears <- win_loss_totals_allteams_allyears %>%
+  dplyr::filter(
+    !(wins == 0 & losses == 0 & ties == 0)
+  )
+
+#A quick sanity check to make sure we didn't lose any games can be achieved by computing
+#how many seasons any set of 32 teams appeared in (ie: how many seasons have 32 teams playing)
+#and comparing that to how many seasons have actually occurred 
+#Note: years from X to Y have "Y-X+1" NFL seasons in them
+cat("Number of seasons worth of games have 32 teams played:", 
+    #the number of rows equates to all the seasons of all the teams in the year range picked
+    nrow(win_loss_totals_allteams_allyears) / 32, 
+    "\n", 
+    "Number of seasons actually played:", 
+    #Simply the last year - first year in the range we looked at, keeping in mind the +1 season
+    max(years) - min(years) + 1
+)
+
+
+#Now we want to look at playoff outcome. The easiest way to do this is to look at which teams
+#appeared in playoff games. Since games doesn't look at preseason games, this is simply
+#every team that appeared in non-REG games.
+#This is essentially a list of all playoff games.
+playoff_games <- games %>%
+  dplyr::select(season, game_type, away_team, away_score, home_team, home_score, result, overtime) %>%
+  dplyr::filter(game_type != "REG") %>%
+  dplyr::mutate(
+    #set the winner based on the result column, where result >0 when home team wins
+    Winner = ifelse(result < 0, away_team, ifelse(result > 0, home_team, NA)),
+    #similar setup for loser
+    Loser = ifelse(result < 0, home_team, ifelse(result > 0, away_team, NA)),
+    #For ties, since both teams are awarded ties, we need to have both teams appear here.
+    Tie = ifelse(result == 0, paste(home_team, away_team, sep = ","), NA)
+  )
+
+playoff_outcomes <- c()
+playoff_outcomes <- playoff_games %>%
+  select(
+    season,
+    game_type,
+    Team = Loser
+  ) 
+list_of_SB_winners <-c()
+list_of_SB_winners <- playoff_games %>%
+  filter(game_type == "SB") %>%
+  select(
+    season,
+    game_type,
+    Team = Winner
+  ) %>%
+  mutate(
+    game_type = "CHMP"
+  )
+playoff_outcomes <- bind_rows(playoff_outcomes, list_of_SB_winners)
