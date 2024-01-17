@@ -27,17 +27,12 @@ for (package in packages_to_install) {
 
 ###D
 
-
-##Multivariate logistic regression
 merged_df <- read.csv("data/win_loss_playoff_outcomes_epa.csv")
 
 
-log_model <- glm(playoffs ~ wins + total_epa, data = merged_df, family = binomial)
 lim_model <- lm(wins ~ total_epa, data = merged_df)
 
 ## Print the summary of the model
-#For playoffs ~ wins + total_epa, wins is a predictor (as expected) whereas total_epa is not statistically significant
-summary(log_model)
 #For wins ~ total_epa however, we have a nice linear regression line
 summary(lim_model)
 

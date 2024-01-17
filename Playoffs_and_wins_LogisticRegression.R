@@ -221,6 +221,7 @@ probabilities <- plogis(predict(model, type = "link")) *100
 win_loss_totals_allteams_allyears$probability_to_make_playoffs <- sprintf("%.2f",probabilities)
 
 
+##Adding in EPA to our data frame
 #Loop over the following years
 years <- c(2002:2020)
 
@@ -251,11 +252,20 @@ for (year in years) {
 
 #combine such that off_epa and def_epa appear in the same row for each team
 result_df_combined <- result_df %>%
+  dplyr::mutate_if(is.numeric, round, digits = 6)%>%
   dplyr::group_by(season, team) %>%
-  dplyr::summarise(across(everything(), ~na.omit(.)))
+  dplyr::reframe(across(everything(), ~na.omit(.)))
+
 merged_df <- merge(win_loss_totals_allteams_allyears, result_df_combined, by = c("season", "team"), all.x = TRUE)
 # merged_df$total_epa <- rowSums(merged_df[, c("off_epa", "def_epa")], na.rm = TRUE)
 merged_df$total_epa <- merged_df$off_epa - merged_df$def_epa
+
+
+#Make and save the dataframe as a .csv for later use if needed in the data folder.
+common_columns <- c("season", "team")
+specific_columns <- c("off_epa", "def_epa", "total_epa")
+merged_df_subset <- merged_df[, c(common_columns, specific_columns)]
+win_loss_totals_allteams_allyears_merged <- merge(win_loss_totals_allteams_allyears, merged_df_subset, by = common_columns, all.x = TRUE)
 
 #We can summarize the plogis() results by looking at the unique/distinct values of wins and probabilities
 Chance_to_make_playoffs_per_win <- win_loss_totals_allteams_allyears %>%
