@@ -144,17 +144,14 @@ playoff_games <- games %>%
     Tie = ifelse(result == 0, paste(home_team, away_team, sep = ","), NA)
   )
 
-#Make a df which will be merged with the win_loss_totals df. Includes season, team, and takes the loser of the game.
-#We're taking the loser because the winner plays an additional game.
+playoff_outcomes <- c()
 playoff_outcomes <- playoff_games %>%
   select(
     season,
     game_type,
     Team = Loser
   ) 
-
-#The above doesn't account for the winner of the last game since that team never lost a playoff game that year.
-#In order to account for this, we can look specifically at only the winner of the game_type SB games.
+list_of_SB_winners <-c()
 list_of_SB_winners <- playoff_games %>%
   filter(game_type == "SB") %>%
   select(
@@ -162,11 +159,9 @@ list_of_SB_winners <- playoff_games %>%
     game_type,
     Team = Winner
   ) %>%
-#We would also like to be able to differentiate them from the loser of the game, so we'll call them "CHMP" for champion
   mutate(
     game_type = "CHMP"
   )
-#Merge the two above df to get a single df that has the list of all playoff game outcomes.
 playoff_outcomes <- bind_rows(playoff_outcomes, list_of_SB_winners)
 
 #add a column in win_loss_totals_allteams_allyears for playoffs and then the playoff outcome (ie last game played)
@@ -178,105 +173,9 @@ win_loss_totals_allteams_allyears <- merge(win_loss_totals_allteams_allyears, pl
 win_loss_totals_allteams_allyears$playoffs <- ifelse(!is.na(win_loss_totals_allteams_allyears$game_type), 1, win_loss_totals_allteams_allyears$playoffs)
 
 ##This marks the end of data cleaning and management.
-
-##We can now do a logistic regression model to try to find out if making/missing the playoffs (y value, binary 0 or 1) is related to the number of wins in a season.
-#We expect a very high relationship between the two since this is how the playoff format is determined.
-model <- glm(playoffs ~ wins, data = win_loss_totals_allteams_allyears, family = binomial)
-#Print summary of model to look if the coefficients have statistical significance
-summary(model)
-
-#Isolate $wins from the df because that seems to be an easier way to handle the data when making the plot
-win_counts <- as.data.frame(table(win_loss_totals_allteams_allyears$wins))
-#Slight rename of the columns
-colnames(win_counts) <- c("Wins", "Frequency")
-
-#Plotting the logistic regression model
-plot <- ggplot2::ggplot(
-  data = win_loss_totals_allteams_allyears,
-  mapping = aes(x = wins, y = playoffs)
-) +
-  geom_count() +
-  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
-  labs(x = "Wins in a season",
-       y = "Playoff outcome",
-       title = "Number of wins needed to make playoffs",
-       caption = "Data from nflfastR",
-       size = "Frequency") +
-  theme_gray() +
-  theme(plot.title = element_text(size = 10,
-                                  hjust = 0.5,
-                                  face = "bold")
-  ) +
-  scale_x_continuous(breaks = seq(0, 16, by = 2)) +
-  scale_y_continuous(labels = c("Missed", "Made"), breaks = c(0, 1)) +
-  theme(legend.position = "none")
-#visualizing the plot
-plot
-
-#Evaluating the probability of making the playoffs with "x" wins using plogis()
-#plogis() uses the logit function to associate odds of an outcome with the event
-#Since we're looking at % chance, we need to multiply by 100
-probabilities <- plogis(predict(model, type = "link")) *100
-#Adding "percent change to make playoffs" column
-win_loss_totals_allteams_allyears$probability_to_make_playoffs <- sprintf("%.2f",probabilities)
+#Save the dataframe as a .csv for later use if needed in the data folder.
+write.csv(win_loss_totals_allteams_allyears, file = "data/win_loss_playoff_outcomes.csv", row.names = FALSE)
 
 
-#Loop over the following years
-years <- c(2002:2020)
 
-#Create an empty data frame to store the output of our loop
-result_df <- data.frame()
-
-# Loop over the years vector
-for (year in years) {
-  pbp <- nflfastR::load_pbp(year) %>%
-    dplyr::filter(season_type == "REG" & !is.na(posteam) & (rush == 1 | pass == 1))
-  
-  # Define offensive EPA by the mean of the EPA of the team on offense
-  offense <- pbp %>%
-    dplyr::group_by(team = posteam) %>%
-    dplyr::summarise(off_epa = mean(epa, na.rm = TRUE))
-  
-  defense <- pbp %>%
-    dplyr::group_by(team = defteam) %>%
-    dplyr::summarise(def_epa = mean(epa, na.rm = TRUE))
-  
-  # Add a column with the value from the year
-  offense$season <- year
-  defense$season <- year
-  
-  # Append the results to the main data frame
-  result_df <- bind_rows(result_df, offense, defense)
-}
-
-#combine such that off_epa and def_epa appear in the same row for each team
-result_df_combined <- result_df %>%
-  dplyr::group_by(season, team) %>%
-  dplyr::summarise(across(everything(), ~na.omit(.)))
-merged_df <- merge(win_loss_totals_allteams_allyears, result_df_combined, by = c("season", "team"), all.x = TRUE)
-# merged_df$total_epa <- rowSums(merged_df[, c("off_epa", "def_epa")], na.rm = TRUE)
-merged_df$total_epa <- merged_df$off_epa - merged_df$def_epa
-
-#We can summarize the plogis() results by looking at the unique/distinct values of wins and probabilities
-Chance_to_make_playoffs_per_win <- win_loss_totals_allteams_allyears %>%
-  distinct(wins, probability_to_make_playoffs)
-
-#We can extract even more data from our model summary, such as the deviance, residuals, AIC, etc
-summary(model)
-
-
-##Saving our data
-#Saving our logistic regression model plot
-ggplot2::ggsave("Playoff_and_wins_plots/Wins_to_make_playoffs.png", plot)
-#Saving our logistic regression model 
-write.csv(capture.output(summary(model)), file = "data/log_model_playoffs~wins.csv", row.names = FALSE)
-#Saving the %chance to make playoffs df as a .csv
-write.csv(win_counts, file = "data/win_occurrences.csv", row.names = FALSE)
-
-#Make and save the dataframe as a .csv for later use if needed in the data folder.
-common_columns <- c("season", "team")
-specific_columns <- c("off_epa", "def_epa", "total_epa")
-merged_df_subset <- merged_df[, c(common_columns, specific_columns)]
-win_loss_totals_allteams_allyears_merged <- merge(win_loss_totals_allteams_allyears, merged_df_subset, by = common_columns, all.x = TRUE)
-
-write.csv(win_loss_totals_allteams_allyears_merged, file = "data/win_loss_playoff_outcomes_epa.csv", row.names = FALSE)
+##We can now do a 
