@@ -300,8 +300,9 @@ EPA for the years 1999 through 2023.
 Our major question: **How many wins is the "break point" to make the playoffs on
 average?**
 
-We use the number of wins in a season as our IV on the X axis and our binary
-made playoffs as a binary "yes"=1 / "no"=0.
+We use the number of wins in a season as our independent variable on the X axis
+and our binary made playoffs as a binary "yes"=1 / "no"=0 for the dependent
+variable on the y axis.
 
 Our general logistic regression model formula is:
 
@@ -640,7 +641,16 @@ Chance_to_make_playoffs_per_win <- win_loss_totals_allteams_allyears %>%
 
 ```
 
-<br> <br>
+We can sort by number of wins (ascending) using `order()`. Our probabilities for
+each team are as follows:
+
+```{r, echo = FALSE}
+Chance_to_make_playoffs_per_win <- Chance_to_make_playoffs_per_win[order(Chance_to_make_playoffs_per_win$wins), ]
+tibble(Chance_to_make_playoffs_per_win)
+```
+
+At 9 wins in a season, a team has about a 44% chance to make the playoffs. This
+jumps up to a whopping 84% at 10 wins! <br> <br>
 
 \newpage
 

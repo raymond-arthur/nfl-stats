@@ -321,8 +321,9 @@ defensive EPA for the years 1999 through 2023.
 Our major question: **How many wins is the “break point” to make the
 playoffs on average?**
 
-We use the number of wins in a season as our IV on the X axis and our
-binary made playoffs as a binary “yes”=1 / “no”=0.
+We use the number of wins in a season as our independent variable on the
+X axis and our binary made playoffs as a binary “yes”=1 / “no”=0 for the
+dependent variable on the y axis.
 
 Our general logistic regression model formula is:
 
@@ -706,7 +707,32 @@ Chance_to_make_playoffs_per_win <- win_loss_totals_allteams_allyears %>%
   distinct(wins, probability_to_make_playoffs)
 ```
 
-<br> <br>
+We can sort by number of wins (ascending) using `order()`. Our
+probabilities for each team are as follows:
+
+    ## # A tibble: 17 × 2
+    ##     wins probability_to_make_playoffs
+    ##    <int> <chr>                       
+    ##  1     0 0.00                        
+    ##  2     1 0.00                        
+    ##  3     2 0.00                        
+    ##  4     3 0.00                        
+    ##  5     4 0.01                        
+    ##  6     5 0.04                        
+    ##  7     6 0.29                        
+    ##  8     7 1.82                        
+    ##  9     8 10.77                       
+    ## 10     9 43.96                       
+    ## 11    10 83.60                       
+    ## 12    11 97.07                       
+    ## 13    12 99.54                       
+    ## 14    13 99.93                       
+    ## 15    14 99.99                       
+    ## 16    15 100.00                      
+    ## 17    16 100.00
+
+At 9 wins in a season, a team has about a 44% chance to make the
+playoffs. This jumps up to a whopping 84% at 10 wins! <br> <br>
 
 ## Linear regression of wins ~ Total EPA
 
@@ -854,7 +880,7 @@ plot
 
     ## Warning: Removed 47 rows containing missing values (`geom_point()`).
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
 #We can extract even more data from our model summary, such as the deviance, residuals, AIC, etc
