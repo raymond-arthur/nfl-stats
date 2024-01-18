@@ -86,7 +86,7 @@ means the offense outperformed the expected output by 0.25 points.
 Positive and bigger is better.
 
 When looking at the defense: a negative EP means the defense gave up
-less points than expected. For example, an EP on defense of -0.25 means
+fewer points than expected. For example, an EP on defense of -0.25 means
 the defense gave up less points than expected by 0.25 points. Negative
 and bigger is better.
 
@@ -99,9 +99,10 @@ number we are looking at.
 
 ### EPA Per play for each team in each season
 
-Full R code found in: `EpaPerPlay.R` In order to easily visualize the
-EPA per play for each team in each season, we first need to pull the
-relevant data from `nflfastR`:
+Full R code found in: `EpaPerPlay.R`
+
+In order to easily visualize the EPA per play for each team in each
+season, we first need to pull the relevant data from `nflfastR`:
 
 ``` r
 year <- c(2023)
@@ -112,7 +113,7 @@ pbp <- nflfastR::load_pbp(year) %>%
   dplyr::filter(!is.na(posteam) & (rush == 1 | pass == 1))  
 ```
 
-where `nflfastR::loadpbp` loads the entire play by play of all teams in
+where `nflfastR::load_pbp` loads the entire play by play of all teams in
 all games for the year in `year`
 
 However, the EP data is calculated for every play for both teams. This

@@ -27,17 +27,14 @@ with the R function
 
 ```
 
-<br>
-<br>
-\newpage
+<br> <br> \newpage
 
 ## Notation and general information
 
 All teams are in standard 3 character team name abbreviation for teams (eg: BAL
 for Baltimore Ravens)
 
-<br>
-<br>
+<br> <br>
 
 ### For play-by-play data:
 
@@ -46,8 +43,7 @@ Play-by-play data found in `pbp` data frame
 Posteam is the team with possesion of the ball at the start of the play. Defteam
 is the defending team
 
-<br>
-<br>
+<br> <br>
 
 ### For game data
 
@@ -63,8 +59,7 @@ The `games$result` column is the result of the game in numeric form
 We aim to look at the expected points added (EPA) for offense and defense of
 each of the 32 teams for the 2022 season and plot the results.
 
-<br>
-<br>
+<br> <br>
 
 ### A note on EPA:
 
@@ -81,23 +76,23 @@ When looking at the offense: a positive EP means the offense is outperforming
 the expected output. For example, an EP on offense of 0.25 means the offense
 outperformed the expected output by 0.25 points. Positive and bigger is better.
 
-When looking at the defense: a negative EP means the defense gave up less points
-than expected. For example, an EP on defense of -0.25 means the defense gave up
-less points than expected by 0.25 points. Negative and bigger is better.
+When looking at the defense: a negative EP means the defense gave up fewer
+points than expected. For example, an EP on defense of -0.25 means the defense
+gave up less points than expected by 0.25 points. Negative and bigger is better.
 
 This value is known as the expected points (EP) of a given play. Across an
 entire game or season (or any other period), the EP per play of all plays can be
 averaged to an EPA (expected points average). This is the number we are looking
 at.
 
-<br>
-<br>
+<br> <br>
 
 ### EPA Per play for each team in each season
 
-Full R code found in: `EpaPerPlay.R` In order to easily visualize the EPA per
-play for each team in each season, we first need to pull the relevant data from
-`nflfastR`:
+Full R code found in: `EpaPerPlay.R`
+
+In order to easily visualize the EPA per play for each team in each season, we
+first need to pull the relevant data from `nflfastR`:
 
 ```{r, eval = TRUE}
 year <- c(2023)
@@ -109,7 +104,7 @@ pbp <- nflfastR::load_pbp(year) %>%
 
 ```
 
-where `nflfastR::loadpbp` loads the entire play by play of all teams in all
+where `nflfastR::load_pbp` loads the entire play by play of all teams in all
 games for the year in `year`
 
 However, the EP data is calculated for every play for both teams. This means
@@ -122,8 +117,7 @@ team in possession of the football.
 An additional note: we're only looking at `season_type = "REG"` games which are
 regular season games.
 
-<br>
-<br>
+<br> <br>
 
 #### Splitting EP into offensive and defensive EPA
 
@@ -163,8 +157,7 @@ across all of 2023 for ARI (Arizona Cardinals) is 0.091
 defense
 ```
 
-<br>
-<br>
+<br> <br>
 
 #### Plotting EPA for a single year for all teams
 
@@ -224,8 +217,7 @@ plotEPA
 
 which we can save using `ggplot2::ggsave` to our `EpaPerPlay_plots` folder.
 
-<br>
-<br>
+<br> <br>
 
 ### Looping for years 1999-2022
 
@@ -299,8 +291,7 @@ for (year in 1999:2022)
 Our folder `EpaPerPlay_plots` now has all the plots for offensive and defensive
 EPA for the years 1999 through 2023.
 
-<br>
-<br>
+<br> <br>
 
 \newpage
 
@@ -327,8 +318,7 @@ should be equal to 0),
 
 where $\beta_1$ represents the coefficient for wins as a predictor.
 
-<br>
-<br>
+<br> <br>
 
 ### Some important notes about the data
 
@@ -343,8 +333,7 @@ Our goal is to pull each game's data, determine the winner and loser (or in case
 of ties, both teams that tied) and independently determine which teams made or
 missed the playoffs.
 
-<br>
-<br>
+<br> <br>
 
 ### Determining the record of each team
 
@@ -488,8 +477,7 @@ cat("Number of seasons worth of games that 32 teams have played:",
 
 Since both those values are the same, we didn't drop any games.
 
-<br>
-<br>
+<br> <br>
 
 ### Playoff outcomes
 
@@ -580,8 +568,7 @@ game_type columns...
 tibble(win_loss_totals_allteams_allyears)
 ```
 
-<br>
-<br>
+<br> <br>
 
 ### Modeling playoffs \~ wins
 
@@ -653,15 +640,13 @@ Chance_to_make_playoffs_per_win <- win_loss_totals_allteams_allyears %>%
 
 ```
 
-<br>
-<br>
+<br> <br>
 
 \newpage
 
 ## Linear regression of wins \~ Total EPA
 
-<br>
-<br>
+<br> <br>
 
 ### Calculating EPA for every team in every year:
 
@@ -733,7 +718,6 @@ which we save as a .csv file for later use with:
 ```{r, echo = FALSE}
 write.csv(win_loss_totals_allteams_allyears_merged, file = "data/win_loss_playoff_outcomes_epa.csv", row.names = FALSE)
 ```
-
 
 We pose the question: does having a higher total EPA generate more wins over a
 single season?
