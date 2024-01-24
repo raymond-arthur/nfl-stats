@@ -880,7 +880,7 @@ plot
 
     ## Warning: Removed 47 rows containing missing values (`geom_point()`).
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 #We can extract even more data from our model summary, such as the deviance, residuals, AIC, etc
