@@ -75,7 +75,7 @@ here:
 <https://opensourcefootball.com/posts/2020-09-28-nflfastr-ep-wp-and-cp-models/>
 
 **The short version:** based on the context outside of the individual
-play (year or era: import for rule changes, roof type) and the play
+play (eg: year or era to consider rule changes, roof type for field conditions, etc) and the play
 itself (game time, yard line, down, yards to go, etc) an individual play
 will have some modeled number of points that the offense is “expected”
 to score.
